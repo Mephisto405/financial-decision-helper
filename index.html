@@ -17,10 +17,10 @@
 <body>
     <div class="container">
         <h2>간이세액 계산기</h2>
-        <label for="preTaxIncome">세전 월급(원):</label>
+        <label for="preTaxIncome">세전 월급 (원):</label>
         <input type="number" id="preTaxIncome" value="2000000" min="770000"><br>
 
-        <label for="nonTaxableAmount">비과세액(원):</label>
+        <label for="nonTaxableAmount">비과세액 (원):</label>
         <input type="number" id="nonTaxableAmount" value="0" min="0"><br>
 
         <label for="dependents">부양 가족 수 (본인 포함):</label>
@@ -31,15 +31,15 @@
 
         <button onclick="calculateTax()">계산하기</button>
         <h3>계산된 간이세액: <span id="taxResult">0</span>원</h3>
-
-        <style>
-        .warning {
-            color: red;
-            display: none;
-            font-size: 0.8em;
-        }
-        </style>
     </div>
+
+    <style>
+    .warning {
+        color: red;
+        display: none;
+        font-size: 0.8em;
+    }
+    </style>
 
 
     <script>
@@ -103,7 +103,7 @@
                 showWarning('childrenUnder20', '20세 이하 부양 자녀수의 최소값은 ' + childrenUnder20.min + '명입니다.');
                 return;
             }
-            
+
             const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
             const totalDependents = dependents + childrenUnder20;
 
