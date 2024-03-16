@@ -97,34 +97,44 @@
             // 입력 값 검증
             if(preTaxIncome < preTaxIncomeElement.min * 10000) {
                 showWarning('preTaxIncome', '세전 월급의 최소값은 ' + preTaxIncomeElement.min + '만원입니다.');
-                return;
+                preTaxIncome = preTaxIncomeElement.min * 10000
+                document.getElementById('preTaxIncome').value = preTaxIncome;
             }
             if(nonTaxableAmount < nonTaxableAmountElement.min * 10000) {
                 showWarning('nonTaxableAmount', '비과세액의 최소값은 ' + nonTaxableAmountElement.min + '만원입니다.');
-                return;
+                nonTaxableAmount = nonTaxableAmountElement.min * 10000
+                document.getElementById('nonTaxableAmount').value = nonTaxableAmount
             }
             if(dependents < dependentsElement.min) {
                 showWarning('dependents', '부양 가족 수의 최소값은 ' + dependentsElement.min + '명입니다.');
-                return;
+                dependents = dependentsElement.min
+                document.getElementById('dependents').value = dependents
             }
             if(childrenUnder20 < childrenUnder20Element.min) {
                 showWarning('childrenUnder20', '20세 이하 부양 자녀수의 최소값은 ' + childrenUnder20Element.min + '명입니다.');
-                return;
+                childrenUnder20 = childrenUnder20Element.min
+                document.getElementById('childrenUnder20').value = childrenUnder20
             }
 
             const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
             const totalDependents = dependents + childrenUnder20;
 
+            console.log(taxTable); // taxTable 데이터 확인
+            console.log(`Taxable Income: ${taxableIncome}, Total Dependents: ${totalDependents}`); // 입력 확인
+
             let taxAmount = 0;
 
             for (let row of taxTable) {
+                console.log(`Row: ${row}`); // 현재 행 데이터 확인
                 if (taxableIncome >= row[0] && taxableIncome < row[1]) {
                     const index = totalDependents + 1;
+                    console.log(`Applicable Tax Rate: ${row[index]}`); // 적용 세율 확인
                     taxAmount = row[index] ? row[index] : 0;
                     break;
                 }
             }
 
+            console.log(`Tax Amount: ${taxAmount}`); // 계산된 세액 확인
             document.getElementById('taxResult').textContent = taxAmount.toFixed(0);
         }
     </script>
