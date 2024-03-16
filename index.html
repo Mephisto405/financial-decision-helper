@@ -17,33 +17,30 @@
 <body>
     <div class="container">
         <h2>간이세액 계산기</h2>
-        <label for="preTaxIncome">세전 월급 (원):</label>
-        <input type="number" id="preTaxIncome" value="2000000" min="770000">
-        <span class="warning" id="warningPreTaxIncome"></span><br>
+        <label for="preTaxIncome">세전 월급(원):</label>
+        <input type="number" id="preTaxIncome" value="2000000" min="770000"><br>
 
-        <label for="nonTaxableAmount">비과세액 (원):</label>
-        <input type="number" id="nonTaxableAmount" value="0" min="0">
-        <span class="warning" id="warningNonTaxableAmount"></span><br>
+        <label for="nonTaxableAmount">비과세액(원):</label>
+        <input type="number" id="nonTaxableAmount" value="0" min="0"><br>
 
         <label for="dependents">부양 가족 수 (본인 포함):</label>
-        <input type="number" id="dependents" value="1" min="1">
-        <span class="warning" id="warningDependents"></span><br>
+        <input type="number" id="dependents" value="1" min="1"><br>
 
         <label for="childrenUnder20">20세 이하 부양 자녀수:</label>
-        <input type="number" id="childrenUnder20" value="0" min="0">
-        <span class="warning" id="warningChildrenUnder20"></span><br>
+        <input type="number" id="childrenUnder20" value="0" min="0"><br>
 
         <button onclick="calculateTax()">계산하기</button>
         <h3>계산된 간이세액: <span id="taxResult">0</span>원</h3>
+
+        <style>
+        .warning {
+            color: red;
+            display: none;
+            font-size: 0.8em;
+        }
+        </style>
     </div>
 
-    <style>
-    .warning {
-        color: red;
-        display: none;
-        font-size: 0.8em;
-    }
-    </style>
 
     <script>
         let taxTable = []; // 전역 변수로 세금 테이블을 저장
@@ -67,30 +64,46 @@
             .catch(error => console.error('Error loading the file:', error));
         };
         
-        function validateInput(id, min) {
-            const input = document.getElementById(id);
-            const value = input.value;
-            const warningId = 'warning' + id.charAt(0).toUpperCase() + id.slice(1);
+        function showWarning(inputId, message) {
+            const warningId = 'warning' + inputId.charAt(0).toUpperCase() + inputId.slice(1);
+            const warningElement = document.getElementById(warningId);
+            warningElement.style.display = 'inline';
+            warningElement.textContent = message;
+        }
 
-            if (value < min) {
-                document.getElementById(warningId).style.display = 'inline';
-                document.getElementById(warningId).textContent = '최소값 미만입니다!';
-                input.value = min; // 최소값으로 설정
-            } else {
-                document.getElementById(warningId).style.display = 'none';
+        function hideWarnings() {
+            const warningElements = document.getElementsByClassName('warning');
+            for (let element of warningElements) {
+                element.style.display = 'none';
             }
         }
 
-        document.getElementById('preTaxIncome').addEventListener('input', () => validateInput('preTaxIncome', 770000));
-        document.getElementById('nonTaxableAmount').addEventListener('input', () => validateInput('nonTaxableAmount', 0));
-        document.getElementById('dependents').addEventListener('input', () => validateInput('dependents', 1));
-        document.getElementById('childrenUnder20').addEventListener('input', () => validateInput('childrenUnder20', 0));
-
         function calculateTax() {
-            const preTaxIncome = document.getElementById('preTaxIncome').value;
-            const nonTaxableAmount = document.getElementById('nonTaxableAmount').value;
-            const dependents = parseInt(document.getElementById('dependents').value);
-            const childrenUnder20 = parseInt(document.getElementById('childrenUnder20').value);
+            hideWarnings(); // 숨기기 경고
+
+            const preTaxIncome = document.getElementById('preTaxIncome');
+            const nonTaxableAmount = document.getElementById('nonTaxableAmount');
+            const dependents = document.getElementById('dependents');
+            const childrenUnder20 = document.getElementById('childrenUnder20');
+
+            // 입력 값 검증
+            if(preTaxIncome.value < preTaxIncome.min) {
+                showWarning('preTaxIncome', '세전 월급의 최소값은 ' + preTaxIncome.min + '원입니다.');
+                return;
+            }
+            if(nonTaxableAmount.value < nonTaxableAmount.min) {
+                showWarning('nonTaxableAmount', '비과세액의 최소값은 ' + nonTaxableAmount.min + '원입니다.');
+                return;
+            }
+            if(dependents.value < dependents.min) {
+                showWarning('dependents', '부양 가족 수의 최소값은 ' + dependents.min + '명입니다.');
+                return;
+            }
+            if(childrenUnder20.value < childrenUnder20.min) {
+                showWarning('childrenUnder20', '20세 이하 부양 자녀수의 최소값은 ' + childrenUnder20.min + '명입니다.');
+                return;
+            }
+            
             const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
             const totalDependents = dependents + childrenUnder20;
 
