@@ -2,34 +2,74 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>숫자 처리 페이지</title>
+    <title>간이세액 계산기</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <style>
-        /* 여기에 CSS 코드 추가 */
-        body {
-            font-family: Arial, sans-serif;
+        .container {
             margin: 20px;
         }
-        .container {
-            margin-top: 20px;
+        input, button {
+            margin-top: 10px;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <h2>숫자 입력</h2>
-    <input type="number" id="numberInput" placeholder="숫자를 입력하세요">
-    <button onclick="multiplyByTwo()">확인</button>
-    
     <div class="container">
-        <h4>결과:</h4>
-        <div id="result"></div>
+        <h2>간이세액 계산기</h2>
+        <label for="preTaxIncome">세전 월급(원):</label>
+        <input type="number" id="preTaxIncome"><br>
+        <label for="nonTaxableAmount">비과세액(원):</label>
+        <input type="number" id="nonTaxableAmount"><br>
+        <label for="dependents">부양 가족 수(본인 포함):</label>
+        <input type="number" id="dependents"><br>
+        <label for="childrenUnder20">20세 이하 부양 자녀수:</label>
+        <input type="number" id="childrenUnder20"><br>
+        <button onclick="calculateTax()">계산하기</button>
+        <h3>계산된 간이세액: <span id="taxResult">0</span>원</h3>
     </div>
 
     <script>
-        // 여기에 JavaScript 코드 추가
-        function multiplyByTwo() {
-            var input = document.getElementById('numberInput').value;
-            var result = input * 2;
-            document.getElementById('result').innerText = "결과는 " + result + " 입니다.";
+        let taxTable = []; // 전역 변수로 세금 테이블을 저장
+
+        // 페이지 로드 시 엑셀 파일 로드
+        window.onload = function() {
+            fetch('earned_income_withholding_tax_rates_2024.xlsx', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                },
+            })
+            .then(response => response.arrayBuffer())
+            .then(data => {
+                const workbook = XLSX.read(data, {type: 'buffer'});
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                taxTable = json.slice(1); // 첫 번째 행(제목 행)을 제외하고 데이터 저장
+            })
+            .catch(error => console.error('Error loading the file:', error));
+        };
+
+        function calculateTax() {
+            const preTaxIncome = document.getElementById('preTaxIncome').value;
+            const nonTaxableAmount = document.getElementById('nonTaxableAmount').value;
+            const dependents = parseInt(document.getElementById('dependents').value);
+            const childrenUnder20 = parseInt(document.getElementById('childrenUnder20').value);
+            const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
+            const totalDependents = dependents + childrenUnder20;
+
+            let taxAmount = 0;
+
+            for (let row of taxTable) {
+                if (taxableIncome >= row[0] && taxableIncome < row[1]) {
+                    const index = totalDependents + 2;
+                    taxAmount = row[index] ? row[index] * 1000 : 0;
+                    break;
+                }
+            }
+
+            document.getElementById('taxResult').textContent = taxAmount.toFixed(0);
         }
     </script>
 </body>
