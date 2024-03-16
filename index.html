@@ -18,16 +18,32 @@
     <div class="container">
         <h2>간이세액 계산기</h2>
         <label for="preTaxIncome">세전 월급 (원):</label>
-        <input type="number" id="preTaxIncome"><br>
+        <input type="number" id="preTaxIncome" value="2000000" min="770000">
+        <span class="warning" id="warningPreTaxIncome"></span><br>
+
         <label for="nonTaxableAmount">비과세액 (원):</label>
-        <input type="number" id="nonTaxableAmount"><br>
+        <input type="number" id="nonTaxableAmount" value="0" min="0">
+        <span class="warning" id="warningNonTaxableAmount"></span><br>
+
         <label for="dependents">부양 가족 수 (본인 포함):</label>
-        <input type="number" id="dependents"><br>
+        <input type="number" id="dependents" value="1" min="1">
+        <span class="warning" id="warningDependents"></span><br>
+
         <label for="childrenUnder20">20세 이하 부양 자녀수:</label>
-        <input type="number" id="childrenUnder20"><br>
+        <input type="number" id="childrenUnder20" value="0" min="0">
+        <span class="warning" id="warningChildrenUnder20"></span><br>
+
         <button onclick="calculateTax()">계산하기</button>
         <h3>계산된 간이세액: <span id="taxResult">0</span>원</h3>
     </div>
+
+    <style>
+    .warning {
+        color: red;
+        display: none;
+        font-size: 0.8em;
+    }
+    </style>
 
     <script>
         let taxTable = []; // 전역 변수로 세금 테이블을 저장
@@ -50,6 +66,25 @@
             })
             .catch(error => console.error('Error loading the file:', error));
         };
+        
+        function validateInput(id, min) {
+            const input = document.getElementById(id);
+            const value = input.value;
+            const warningId = 'warning' + id.charAt(0).toUpperCase() + id.slice(1);
+
+            if (value < min) {
+                document.getElementById(warningId).style.display = 'inline';
+                document.getElementById(warningId).textContent = '최소값 미만입니다!';
+                input.value = min; // 최소값으로 설정
+            } else {
+                document.getElementById(warningId).style.display = 'none';
+            }
+        }
+
+        document.getElementById('preTaxIncome').addEventListener('input', () => validateInput('preTaxIncome', 770000));
+        document.getElementById('nonTaxableAmount').addEventListener('input', () => validateInput('nonTaxableAmount', 0));
+        document.getElementById('dependents').addEventListener('input', () => validateInput('dependents', 1));
+        document.getElementById('childrenUnder20').addEventListener('input', () => validateInput('childrenUnder20', 0));
 
         function calculateTax() {
             const preTaxIncome = document.getElementById('preTaxIncome').value;
