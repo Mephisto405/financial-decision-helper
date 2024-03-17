@@ -18,19 +18,19 @@
     <div class="container">
         <h2>간이세액 계산기</h2>
         <label for="preTaxIncome">세전 월급 (만원):</label>
-        <input type="number" id="preTaxIncome" value=200 min=77>
+        <input type="number" id="preTaxIncome" value="200" min="77" step="0.0001">
         <span class="warning" id="warningPreTaxIncome"></span><br>
 
         <label for="nonTaxableAmount">비과세액 (만원):</label>
-        <input type="number" id="nonTaxableAmount" value=0 min=0>
+        <input type="number" id="nonTaxableAmount" value="0" min="0" step="0.0001">
         <span class="warning" id="warningNonTaxableAmount"></span><br>
 
         <label for="dependents">부양 가족 수 (본인 포함):</label>
-        <input type="number" id="dependents" value=1 min=1>
+        <input type="number" id="dependents" value="1" min="1" max="12">
         <span class="warning" id="warningDependents"></span><br>
 
         <label for="childrenUnder20">20세 이하 부양 자녀수:</label>
-        <input type="number" id="childrenUnder20" value=0 min=0>
+        <input type="number" id="childrenUnder20" value="0" min="0" max="12">
         <span class="warning" id="warningChildrenUnder20"></span><br>
 
         <button onclick="calculateTax()">계산하기</button>
@@ -89,8 +89,8 @@
             const childrenUnder20Element = document.getElementById('childrenUnder20');
 
             // 입력 필드로부터 실제 값을 가져와서 숫자로 변환
-            let preTaxIncome = parseInt(preTaxIncomeElement.value) * 10000;
-            let nonTaxableAmount = parseInt(nonTaxableAmountElement.value) * 10000;
+            let preTaxIncome = parseFloat(preTaxIncomeElement.value) * 10000;
+            let nonTaxableAmount = parseFloat(nonTaxableAmountElement.value) * 10000;
             let dependents = parseInt(dependentsElement.value);
             let childrenUnder20 = parseInt(childrenUnder20Element.value);
 
@@ -116,22 +116,55 @@
                 dependentsElement.value = dependentsElement.min;
             }
 
+            if (dependents > parseInt(dependentsElement.max)) {
+                showWarning('dependents', `부양 가족 수의 최대값은 ${dependentsElement.max}명입니다.`);
+                dependents = parseInt(dependentsElement.max);
+                dependentsElement.value = dependentsElement.max;
+            }
+
             if (childrenUnder20 < parseInt(childrenUnder20Element.min)) {
                 showWarning('childrenUnder20', `20세 이하 부양 자녀수의 최소값은 ${childrenUnder20Element.min}명입니다.`);
                 childrenUnder20 = parseInt(childrenUnder20Element.min);
                 childrenUnder20Element.value = childrenUnder20Element.min;
             }
 
+            if (childrenUnder20 > parseInt(childrenUnder20Element.max)) {
+                showWarning('childrenUnder20', `20세 이하 부양 자녀수의 최소값은 ${childrenUnder20Element.max}명입니다.`);
+                childrenUnder20 = parseInt(childrenUnder20Element.max);
+                childrenUnder20Element.value = childrenUnder20Element.max;
+            }
+
             // 세금 계산 로직 시작
             const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
             const totalDependents = dependents + childrenUnder20;
+            const index = totalDependents + 1; // 배열 인덱싱을 위해 적절한 조정
             let taxAmount = 0;
+            
+            if (taxableIncome < 10000) { // 10,000천원 미만인 경우의 세금 계산
+                for (let row of taxTable) {
+                    if (taxableIncome >= row[0] && taxableIncome < row[1]) {
+                        taxAmount = row[index] ? row[index] : 0;
+                        break;
+                    }
+                }
+            } else { // 10,000천원 이상인 경우의 세금 계산
+                let baseTaxRow = taxTable.find(row => row[0] === "10,000천원" && (row[1] === "" || row[1] == null));
+                let baseTaxAmount = baseTaxRow ? parseFloat(baseTaxRow[index]) : 0; // 기본 세액
 
-            for (let row of taxTable) {
-                if (taxableIncome >= row[0] && taxableIncome < row[1]) {
-                    const index = totalDependents + 2; // 배열 인덱싱을 위해 적절한 조정
-                    taxAmount = row[index] ? row[index] : 0;
-                    break;
+                if (taxableIncome <= 10000) {
+                    taxAmount = baseTaxAmount;
+                } else if (taxableIncome <= 14000) {
+                    taxAmount = baseTaxAmount + (taxableIncome - 10000) * 1000 * 0.98 * 0.35 + 25000;
+                } else if (taxableIncome <= 28000) {
+                    taxAmount = baseTaxAmount + 1397000 + (taxableIncome - 14000) * 1000 * 0.98 * 0.38;
+                } else if (taxableIncome <= 30000) {
+                    taxAmount = baseTaxAmount + 6610600 + (taxableIncome - 28000) * 1000 * 0.98 * 0.40;
+                } else if (taxableIncome <= 45000) {
+                    taxAmount = baseTaxAmount + 7394600 + (taxableIncome - 30000) * 1000 * 0.40;
+                } else if (taxableIncome <= 87000) {
+                    taxAmount = baseTaxAmount + 13394600 + (taxableIncome - 45000) * 1000 * 0.42;
+                } else { // 87,000천원 초과
+                    taxAmount = baseTaxAmount + 31034600 + (taxableIncome - 87000) * 1000 * 0.45;
                 }
             }
 
