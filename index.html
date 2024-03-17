@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>간이세액 계산기</h2>
+        <h2>간이세액 및 예상 실수령액 계산기</h2>
         <label for="preTaxIncome">세전 월급 (만원):</label>
         <input type="number" id="preTaxIncome" value="200" min="77" step="0.0001">
         <span class="warning" id="warningPreTaxIncome"></span><br>
@@ -34,7 +34,16 @@
         <span class="warning" id="warningChildrenUnder20"></span><br>
 
         <button onclick="calculateTax()">계산하기</button>
-        <h3>계산된 간이세액: <span id="taxResult">0</span>원</h3>
+        <div id="results">
+            <h4>소득세: <span id="incomeTax">0</span>원</h4>
+            <h4>지방소득세: <span id="localIncomeTax">0</span>원</h4>
+            <h4>국민연금: <span id="nationalPension">0</span>원</h4>
+            <h4>건강보험료: <span id="healthInsurance">0</span>원</h4>
+            <h4>장기요양보험료: <span id="longTermCareInsurance">0</span>원</h4>
+            <h4>고용보험료: <span id="employmentInsurance">0</span>원</h4>
+            <h4>공제액 합계: <span id="totalDeductions">0</span>원</h4>
+            <h3>예상 실수령액: <span id="netIncome">0</span>원</h3>
+        </div>
     </div>
 
     <style>
@@ -79,6 +88,10 @@
             for (let element of warningElements) {
                 element.style.display = 'none';
             }
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat().format(Math.round(num/10)*10);
         }
 
         function calculateTax() {
@@ -167,10 +180,39 @@
                     taxAmount = baseTaxAmount + 31034600 + (taxableIncome - 87000) * 1000 * 0.45;
                 }
             }
+            
+            // 지방소득세 계산
+            const localIncomeTax = taxAmount * 0.1;
 
-            // 계산된 세액을 표시
-            const formattedTaxAmount = new Intl.NumberFormat().format(taxAmount);
-            document.getElementById('taxResult').textContent = formattedTaxAmount;
+            // 국민연금 계산
+            let pensionBase = Math.max(370000, Math.min(taxableIncome * 1000, 5900000));
+            const nationalPension = pensionBase * 0.045;
+
+            // 건강보험료 계산
+            let healthInsuranceBase = Math.max(279266, Math.min(taxableIncome * 1000, 110332300));
+            const healthInsurance = healthInsuranceBase * 0.03545;
+
+            // 장기요양보험료 계산
+            const longTermCareInsurance = healthInsurance * 0.1295;
+
+            // 고용보험료 계산
+            const employmentInsurance = taxableIncome * 1000 * 0.009;
+
+            // 공제액 합계
+            const totalDeductions = taxAmount + localIncomeTax + nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance;
+
+            // 예상 실수령액
+            const netIncome = preTaxIncome - totalDeductions;
+
+            // 결과 표시
+            document.getElementById('incomeTax').textContent = formatNumber(taxAmount);
+            document.getElementById('localIncomeTax').textContent = formatNumber(localIncomeTax);
+            document.getElementById('nationalPension').textContent = formatNumber(nationalPension);
+            document.getElementById('healthInsurance').textContent = formatNumber(healthInsurance);
+            document.getElementById('longTermCareInsurance').textContent = formatNumber(longTermCareInsurance);
+            document.getElementById('employmentInsurance').textContent = formatNumber(employmentInsurance);
+            document.getElementById('totalDeductions').textContent = formatNumber(totalDeductions);
+            document.getElementById('netIncome').textContent = formatNumber(netIncome);
         }
     </script>
 </body>
