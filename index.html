@@ -169,7 +169,8 @@
             }
 
             // 계산된 세액을 표시
-            document.getElementById('taxResult').textContent = taxAmount.toFixed(0);
+            const formattedTaxAmount = new Intl.NumberFormat().format(taxAmount);
+            document.getElementById('taxResult').textContent = formattedTaxAmount;
         }
     </script>
 </body>
