@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>간이세액 계산기</title>
+    <title>예상 실수령액 계산기</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <style>
         .container {
@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>간이세액 및 예상 실수령액 계산기</h2>
+        <h2>예상 실수령액 계산기 (2024-03-18)</h2>
         <label for="preTaxIncome">세전 월급 (만원):</label>
         <input type="number" id="preTaxIncome" value="200" min="77" step="0.0001">
         <span class="warning" id="warningPreTaxIncome"></span><br>
@@ -33,17 +33,41 @@
         <input type="number" id="childrenUnder20" value="0" min="0" max="12">
         <span class="warning" id="warningChildrenUnder20"></span><br>
 
-        <button onclick="calculateTax()">계산하기</button>
         <div id="results">
-            <h4>소득세: <span id="incomeTax">0</span>원</h4>
-            <h4>지방소득세: <span id="localIncomeTax">0</span>원</h4>
-            <h4>국민연금: <span id="nationalPension">0</span>원</h4>
-            <h4>건강보험료: <span id="healthInsurance">0</span>원</h4>
-            <h4>장기요양보험료: <span id="longTermCareInsurance">0</span>원</h4>
-            <h4>고용보험료: <span id="employmentInsurance">0</span>원</h4>
+            <h4>소득세: <span id="incomeTax">0</span>원, 지방소득세: <span id="localIncomeTax">0</span>원</h4>
+            <h4>국민연금: <span id="nationalPension">0</span>원, 건강보험료: <span id="healthInsurance">0</span>원, 장기요양보험료: <span id="longTermCareInsurance">0</span>원, 고용보험료: <span id="employmentInsurance">0</span>원</h4>
             <h4>공제액 합계: <span id="totalDeductions">0</span>원</h4>
-            <h3>예상 실수령액: <span id="netIncome">0</span>원</h3>
+            <h3>예상 실수령액: <span id="netIncome">0</span>원 &#128176;&#128176;</h3>
         </div>
+
+        <h2>예상 IRP 수익 계산기 (2024-03-19)</h2>
+        <label for="irpMonthlyContribution">IRP계좌 월 납입액 (만원):</label>
+        <input type="number" id="irpMonthlyContribution" value="50" min="0" max="150" step="0.0001"><br>
+
+        <label for="irpCurrentAssets">IRP계좌 현 자산 (만원):</label>
+        <input type="number" id="irpCurrentAssets" value="0" min="0" step="0.0001"><br>
+
+        <label for="irpCurrentContributions">IRP계좌 현 입금액 (만원):</label>
+        <input type="number" id="irpCurrentContributions" value="0" min="0" step="0.0001"><br>
+
+        <label for="expectedReturnRate">예상 수익률 (%):</label>
+        <input type="number" id="expectedReturnRate" value="6" min="0" max="30"><br>
+
+        <label for="reinvestTaxDeductions">세액 공제액 재투자 여부:</label>
+        <input type="checkbox" id="reinvestTaxDeductions"><br>
+
+        <label for="currentAge">현재 만 나이:</label>
+        <input type="number" id="currentAge" value="26" min="0" max="55"><br>
+
+        <label for="pensionAge">연금 수령 나이:</label>
+        <input type="number" id="pensionAge" value="55" min="55" max="100"><br>
+
+        <div id="sumResults">
+            <h4>총 입금액: <span id="totalContributions">0</span>만원</h4>
+            <h3>예상 IRP 계좌 총 자산: <span id="totalFutureValue">0</span>만원 &#128176;&#128176;</h3>
+        </div>
+
+        <button onclick="calculate()">계산하기</button>
     </div>
 
     <style>
@@ -94,7 +118,7 @@
             return new Intl.NumberFormat().format(Math.round(num/10)*10);
         }
 
-        function calculateTax() {
+        function calculate() {
             // 입력 필드 값 가져오기
             const preTaxIncomeElement = document.getElementById('preTaxIncome');
             const nonTaxableAmountElement = document.getElementById('nonTaxableAmount');
@@ -148,14 +172,14 @@
             }
 
             // 세금 계산 로직 시작
-            const taxableIncome = (preTaxIncome - nonTaxableAmount) / 1000;
+            const taxableIncome = (preTaxIncome - nonTaxableAmount) / 10000; // 만원 단위
             const totalDependents = dependents + childrenUnder20;
             const index = totalDependents + 1; // 배열 인덱싱을 위해 적절한 조정
-            let taxAmount = 0;
+            let taxAmount = 0; // 원 단위
             
-            if (taxableIncome < 10000) { // 10,000천원 미만인 경우의 세금 계산
+            if (taxableIncome < 1000) { // 10,000천원 미만인 경우의 세금 계산
                 for (let row of taxTable) {
-                    if (taxableIncome >= row[0] && taxableIncome < row[1]) {
+                    if (taxableIncome >= row[0] / 10 && taxableIncome < row[1] / 10) {
                         taxAmount = row[index] ? row[index] : 0;
                         break;
                     }
@@ -164,20 +188,20 @@
                 let baseTaxRow = taxTable.find(row => row[0] === "10,000천원" && (row[1] === "" || row[1] == null));
                 let baseTaxAmount = baseTaxRow ? parseFloat(baseTaxRow[index]) : 0; // 기본 세액
 
-                if (taxableIncome <= 10000) {
+                if (taxableIncome <= 1000) {
                     taxAmount = baseTaxAmount;
-                } else if (taxableIncome <= 14000) {
-                    taxAmount = baseTaxAmount + (taxableIncome - 10000) * 1000 * 0.98 * 0.35 + 25000;
-                } else if (taxableIncome <= 28000) {
-                    taxAmount = baseTaxAmount + 1397000 + (taxableIncome - 14000) * 1000 * 0.98 * 0.38;
-                } else if (taxableIncome <= 30000) {
-                    taxAmount = baseTaxAmount + 6610600 + (taxableIncome - 28000) * 1000 * 0.98 * 0.40;
-                } else if (taxableIncome <= 45000) {
-                    taxAmount = baseTaxAmount + 7394600 + (taxableIncome - 30000) * 1000 * 0.40;
-                } else if (taxableIncome <= 87000) {
-                    taxAmount = baseTaxAmount + 13394600 + (taxableIncome - 45000) * 1000 * 0.42;
+                } else if (taxableIncome <= 1400) {
+                    taxAmount = baseTaxAmount + (taxableIncome - 1000) * 10000 * 0.98 * 0.35 + 25000;
+                } else if (taxableIncome <= 2800) {
+                    taxAmount = baseTaxAmount + 1397000 + (taxableIncome - 1400) * 10000 * 0.98 * 0.38;
+                } else if (taxableIncome <= 3000) {
+                    taxAmount = baseTaxAmount + 6610600 + (taxableIncome - 2800) * 10000 * 0.98 * 0.40;
+                } else if (taxableIncome <= 4500) {
+                    taxAmount = baseTaxAmount + 7394600 + (taxableIncome - 3000) * 10000 * 0.40;
+                } else if (taxableIncome <= 8700) {
+                    taxAmount = baseTaxAmount + 13394600 + (taxableIncome - 4500) * 10000 * 0.42;
                 } else { // 87,000천원 초과
-                    taxAmount = baseTaxAmount + 31034600 + (taxableIncome - 87000) * 1000 * 0.45;
+                    taxAmount = baseTaxAmount + 31034600 + (taxableIncome - 8700) * 10000 * 0.45;
                 }
             }
             
@@ -185,18 +209,18 @@
             const localIncomeTax = taxAmount * 0.1;
 
             // 국민연금 계산
-            let pensionBase = Math.max(370000, Math.min(taxableIncome * 1000, 5900000));
+            let pensionBase = Math.max(370000, Math.min(taxableIncome * 10000, 5900000));
             const nationalPension = pensionBase * 0.045;
 
             // 건강보험료 계산
-            let healthInsuranceBase = Math.max(279266, Math.min(taxableIncome * 1000, 110332300));
+            let healthInsuranceBase = Math.max(279266, Math.min(taxableIncome * 10000, 110332300));
             const healthInsurance = healthInsuranceBase * 0.03545;
 
             // 장기요양보험료 계산
             const longTermCareInsurance = healthInsurance * 0.1295;
 
             // 고용보험료 계산
-            const employmentInsurance = taxableIncome * 1000 * 0.009;
+            const employmentInsurance = taxableIncome * 10000 * 0.009;
 
             // 공제액 합계
             const totalDeductions = taxAmount + localIncomeTax + nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance;
@@ -213,6 +237,46 @@
             document.getElementById('employmentInsurance').textContent = formatNumber(employmentInsurance);
             document.getElementById('totalDeductions').textContent = formatNumber(totalDeductions);
             document.getElementById('netIncome').textContent = formatNumber(netIncome);
+
+            // IRP 계좌 로직
+            const monthlyContribution = parseFloat(document.getElementById('irpMonthlyContribution').value);
+            const currentAssets = parseFloat(document.getElementById('irpCurrentAssets').value);
+            const currentContributions = parseFloat(document.getElementById('irpCurrentContributions').value);
+            const annualReturnRate = parseFloat(document.getElementById('expectedReturnRate').value) / 100; // 퍼센트를 소수로 변환
+            const currentAge = parseInt(document.getElementById('currentAge').value);
+            const pensionAge = parseInt(document.getElementById('pensionAge').value);
+            
+            const yearsToPension = pensionAge - currentAge;
+            const n = 12; // 연간 복리 계산 횟수 (월 복리)
+
+            // 현재 자산의 미래 가치 계산
+            let futureValueOfCurrentAssets = currentAssets * Math.pow((1 + annualReturnRate / n), n * yearsToPension);
+
+            // 월 납입액의 미래 가치 계산
+            let futureValueOfContributions = monthlyContribution * ((Math.pow((1 + annualReturnRate / n), n * yearsToPension) - 1) / (annualReturnRate / n));
+
+            // 총 미래 가치 계산 (현재 자산의 미래 가치 + 월 납입액의 미래 가치)
+            let totalFutureValue = futureValueOfCurrentAssets + futureValueOfContributions;
+
+            // 세액 공제액 재투자 시나리오
+            const annualTaxableIncome = taxableIncome * 12;
+            let taxDeductionRate = annualTaxableIncome <= 5500 ? 0.165 : 0.132;
+            let taxDeductionLimit = Math.min(900, monthlyContribution * 12); // 900만원 한도
+            let taxDeduction = taxDeductionLimit * taxDeductionRate;
+
+            const reinvestTaxDeductions = document.getElementById('reinvestTaxDeductions').checked;
+
+            if (reinvestTaxDeductions) {
+                // 세액 공제액을 다음 해의 IRP 계좌 월 납입액에 추가
+                const additionalMonthlyContribution = (taxDeduction / 12); // 만원 단위로 변환
+                // 다음 해부터 연금 수령 나이까지의 기간 동안 추가 납입액을 고려한 복리 계산
+                let futureValueOfAdditionalContributions = additionalMonthlyContribution * ((Math.pow((1 + annualReturnRate / n), n * (yearsToPension - 1)) - 1) / (annualReturnRate / n));
+                totalFutureValue += futureValueOfAdditionalContributions; // 총 미래 가치에 추가
+            }
+
+            // 최종 결과 출력
+            document.getElementById("totalFutureValue").textContent = formatNumber(totalFutureValue)
+            document.getElementById("totalContributions").textContent = formatNumber(currentContributions + (monthlyContribution * 12 * yearsToPension));
         }
     </script>
 </body>
